@@ -18,14 +18,15 @@ else:
     TypeAlias = str  # type: ignore[assignment]
 
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 __author__ = "Marcin Konowalczyk"
 
 __all__ = ["compare_json"]
 
 __changelog__ = [
-    (__version__, ("reduced and simplified interface to just `compare_json`"), "@lczyk"),
+    ("0.2.1", "fix `_compare_json_lists` false positive", "@lczyk"),
+    ("0.2.0", ("reduced and simplified interface to just `compare_json`"), "@lczyk"),
     ("0.1.5", "add `unordered` option", "@lczyk"),
     ("0.1.4", "add generic interface (`compare_json`)", "@lczyk"),
     ("0.1.3", "add json stack", "@lczyk"),
@@ -118,7 +119,8 @@ def _compare_json_lists(expected: list[Any], actual: list[Any], unordered: bool,
             # NOTE: This is expensive for large lists! For deeply nested lists we're doing *exponential* work here!
             index = -1
             for j, actual_value in enumerate(actual):
-                if not _compare_json_values(expected_value, actual_value, unordered=unordered, stack=stack):
+                msg, _ = _compare_json_values(expected_value, actual_value, unordered=unordered, stack=stack)
+                if not msg:  # No difference found
                     index = j
                     break
             if index == -1:
