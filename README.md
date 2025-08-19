@@ -23,9 +23,7 @@ Tested in Python 3.9+.
 ```python
 from compare_json import compare_json
 
-def test_basket():
-    actual = ...
-    expected = {
+expected = {
     "basket": {
         "fruit": [
             "apple",
@@ -35,6 +33,16 @@ def test_basket():
         "full": false,
         "capacity: 10,
     }
+}
+
+def test_basket_normal():
+    actual = ...
+    # Prints a massive unfriendly message which makes it hard ot pinpoint what's the matter
+    assert actual == expected
+
+def test_basket_compare_json():
+    actual = ...
+    # Prints the exact difference + json stack to point to it :D 
     compare_json(actual, expected)
 }
 ```
