@@ -3,6 +3,7 @@ Single-file Micro JSON Comparison Library to use in tests.
 
 Compares two JSON objects (multiply nested dicts or lists) element by element
 recursively, and returns a message describing the differences in a human-friendly way.
+
 Stops on the first difference found.
 """
 
