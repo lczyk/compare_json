@@ -77,4 +77,4 @@ def test_json_stack_list() -> None:
 
     msg, stack = _compare_json(json1, json2, False, None)
     assert "Value mismatch" in msg
-    assert stack == ["key", "[1]"]
+    assert stack == ["key", 1]

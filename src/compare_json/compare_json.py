@@ -19,13 +19,14 @@ else:
     TypeAlias = str  # type: ignore[assignment]
 
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 
 __author__ = "Marcin Konowalczyk"
 
 __all__ = ["compare_json"]
 
 __changelog__ = [
+    ("0.2.3", "added int to internal stack representation", "@lczyk"),
     ("0.2.2", "simplify internals + nicer types in messages", "@lczyk"),
     ("0.2.1", "fix `_compare_json_lists` false positive", "@lczyk"),
     ("0.2.0", ("reduced and simplified interface to just `compare_json`"), "@lczyk"),
@@ -48,8 +49,9 @@ def compare_json(
     Returns a tuple of (ok: bool, message: str)."""
     __tracebackhide__ = True
     msg, stack = _compare_json_values(expected, actual, unordered=unordered, stack=None)
-    if msg:  # attach the stack
-        msg = f"{msg}{'. At: ' + '.'.join(stack) if stack else ''}"
+    if msg and stack:  # attach the stack
+        _stack = [(f"[{s}]" if isinstance(s, int) else s) for s in stack]
+        msg = msg + ". At: " + ".".join(_stack)
     if raise_assertion and msg:
         raise AssertionError(msg)
     if msg:
@@ -59,16 +61,16 @@ def compare_json(
 
 ### Internal ###########################################################################################################
 
-_Stack: TypeAlias = "list[str] | None"
+_Stack: TypeAlias = "list[str | int]"
 
 
 def _compare_json_dicts(
-    expected: dict[str, Any], actual: dict[str, Any], unordered: bool, stack: _Stack
+    expected: dict[str, Any], actual: dict[str, Any], unordered: bool, stack: _Stack | None
 ) -> tuple[str, _Stack]:
     if not isinstance(expected, dict):
-        return f"Expected a dictionary, got '{type(expected)}'", stack
+        return f"Expected a dictionary, got '{type(expected)}'", stack or []
     if not isinstance(actual, dict):
-        return f"Expected a dictionary, got '{type(actual)}'", stack
+        return f"Expected a dictionary, got '{type(actual)}'", stack or []
 
     expected_keys = list(expected.keys())
     actual_keys = list(actual.keys())
@@ -76,7 +78,7 @@ def _compare_json_dicts(
         expected_keys.sort()
         actual_keys.sort()
     if len(expected_keys) != len(actual_keys):
-        return f"Key lengths do not match: expected {len(expected_keys)}, got {len(actual_keys)}", stack
+        return f"Key lengths do not match: expected {len(expected_keys)}, got {len(actual_keys)}", stack or []
     for key in expected_keys:
         stack = [*stack, key] if stack else [key]
         if key not in actual:
@@ -87,35 +89,39 @@ def _compare_json_dicts(
         if msg:
             return msg, _stack
         stack.pop()
-    return "", stack  # No differences found
+    return "", stack or []  # No differences found
 
 
-def _compare_json_values(expected_value: Any, actual_value: Any, unordered: bool, stack: _Stack) -> tuple[str, _Stack]:
+def _compare_json_values(
+    expected_value: Any, actual_value: Any, unordered: bool, stack: _Stack | None
+) -> tuple[str, _Stack]:
     expected_type = type(expected_value)
     actual_type = type(actual_value)
     if expected_type != actual_type:
-        return f"Type mismatch: expected '{expected_type.__name__}', got '{actual_type.__name__}'", stack
+        return f"Type mismatch: expected '{expected_type.__name__}', got '{actual_type.__name__}'", stack or []
     if expected_type is dict:
         return _compare_json_dicts(expected_value, actual_value, unordered=unordered, stack=stack)
     elif expected_type is list:
         return _compare_json_lists(expected_value, actual_value, unordered=unordered, stack=stack)
     elif expected_value != actual_value:
-        return f"Value mismatch: expected '{expected_value}', got '{actual_value}'", stack
-    return "", stack  # No differences found
+        return f"Value mismatch: expected '{expected_value}', got '{actual_value}'", stack or []
+    return "", stack or []  # No differences found
 
 
-def _compare_json_lists(expected: list[Any], actual: list[Any], unordered: bool, stack: _Stack) -> tuple[str, _Stack]:
+def _compare_json_lists(
+    expected: list[Any], actual: list[Any], unordered: bool, stack: _Stack | None
+) -> tuple[str, _Stack]:
     if not isinstance(expected, list):
         return f"Expected a list, got '{type(expected)}'", stack
     if not isinstance(actual, list):
         return f"Expected a list, got '{type(actual)}'", stack
 
     if len(expected) != len(actual):
-        return f"List lengths do not match: {len(expected)} != {len(actual)}", stack
+        return f"List lengths do not match: {len(expected)} != {len(actual)}", stack or []
 
     if unordered:
         for i, expected_value in enumerate(expected):
-            stack = [*stack, f"[{i}]"] if stack else [f"[{i}]"]
+            stack = [*stack, i] if stack else [i]
             # Find the actual value that matches the expected value
             # NOTE: This is expensive for large lists! For deeply nested lists we're doing *exponential* work here!
             index = -1
@@ -132,12 +138,12 @@ def _compare_json_lists(expected: list[Any], actual: list[Any], unordered: bool,
 
     else:
         for i, (expected_value, actual_value) in enumerate(zip(expected, actual)):
-            stack = [*stack, f"[{i}]"] if stack else [f"[{i}]"]
+            stack = [*stack, i] if stack else [i]
             msg, _stack = _compare_json_values(expected_value, actual_value, unordered=unordered, stack=stack)
             if msg:
                 return msg, _stack
             stack.pop()
-    return "", stack  # No differences found
+    return "", stack or []  # No differences found
 
 
 __license__ = """
