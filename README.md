@@ -16,6 +16,8 @@ recursively, and returns a message describing the differences in a human-friendl
 
 Stops on the first difference found.
 
+Closely related to [find_in_json](https://github.com/lczyk/find_in_json) module.
+
 Tested in Python 3.9+.
 
 # Usage
