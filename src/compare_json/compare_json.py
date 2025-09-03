@@ -19,13 +19,14 @@ else:
     TypeAlias = str  # type: ignore[assignment]
 
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 __author__ = "Marcin Konowalczyk"
 
 __all__ = ["compare_json"]
 
 __changelog__ = [
+    ("0.2.2", "simplify internals + nicer types in messages", "@lczyk"),
     ("0.2.1", "fix `_compare_json_lists` false positive", "@lczyk"),
     ("0.2.0", ("reduced and simplified interface to just `compare_json`"), "@lczyk"),
     ("0.1.5", "add `unordered` option", "@lczyk"),
@@ -42,12 +43,11 @@ def compare_json(
     *,
     raise_assertion: bool = True,
     unordered: bool = False,
-    stack: _Stack = None,
 ) -> tuple[bool, str]:
     """Compare two JSON objects (dict or list) in a way which is friendly to the test output.
     Returns a tuple of (ok: bool, message: str)."""
     __tracebackhide__ = True
-    msg, stack = _compare_json(expected, actual, unordered=unordered, stack=stack)
+    msg, stack = _compare_json_values(expected, actual, unordered=unordered, stack=None)
     if msg:  # attach the stack
         msg = f"{msg}{'. At: ' + '.'.join(stack) if stack else ''}"
     if raise_assertion and msg:
@@ -94,7 +94,7 @@ def _compare_json_values(expected_value: Any, actual_value: Any, unordered: bool
     expected_type = type(expected_value)
     actual_type = type(actual_value)
     if expected_type != actual_type:
-        return f"Type mismatch: expected '{expected_type}', got '{actual_type}'", stack
+        return f"Type mismatch: expected '{expected_type.__name__}', got '{actual_type.__name__}'", stack
     if expected_type is dict:
         return _compare_json_dicts(expected_value, actual_value, unordered=unordered, stack=stack)
     elif expected_type is list:
@@ -138,15 +138,6 @@ def _compare_json_lists(expected: list[Any], actual: list[Any], unordered: bool,
                 return msg, _stack
             stack.pop()
     return "", stack  # No differences found
-
-
-def _compare_json(expected: object, actual: object, unordered: bool, stack: _Stack) -> tuple[str, _Stack]:
-    if isinstance(expected, dict):
-        return _compare_json_dicts(expected, actual, unordered=unordered, stack=stack)  # type: ignore
-    elif isinstance(expected, list):
-        return _compare_json_lists(expected, actual, unordered=unordered, stack=stack)  # type: ignore
-    else:
-        return _compare_json_values(expected, actual, unordered=unordered, stack=stack)
 
 
 __license__ = """

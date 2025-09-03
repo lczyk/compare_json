@@ -1,5 +1,5 @@
 from compare_json import compare_json
-from compare_json.compare_json import _compare_json
+from compare_json.compare_json import _compare_json_values as _compare_json
 
 
 def test_compare_json_functionality() -> None:
@@ -21,7 +21,7 @@ def test_compare_json_different_types() -> None:
     ok, message = compare_json(json1, json2, raise_assertion=False)
 
     assert not ok
-    assert "Expected a dictionary" in message
+    assert "Type mismatch: expected 'dict', got 'list'" in message
 
 
 def test_compare_json_unordered_lists() -> None:
